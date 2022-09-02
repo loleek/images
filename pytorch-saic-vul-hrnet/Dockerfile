@@ -26,7 +26,7 @@ COPY sources.list /etc/apt/sources.list
 RUN apt-get update && apt-get install software-properties-common -y
 RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential git curl libglib2.0-0 software-properties-common python3 python3.6-dev python3-pip python3-tk
-RUN pip install nuclio-sdk msgpack --no-index --find-links /opt/nuclio/whl
+RUN pip3 install nuclio-sdk msgpack -i http://mirrors.aliyun.com/pypi/simple/ --no-index --find-links /opt/nuclio/whl
 RUN pip3 install --upgrade pip
 WORKDIR /opt/nuclio
 RUN git clone https://github.com/saic-vul/ritm_interactive_segmentation.git hrnet
@@ -37,7 +37,7 @@ RUN pip3 install setuptools
 RUN pip3 install -r requirements.txt
 RUN apt update && apt install -y libgl1-mesa-glx
 RUN pip3 uninstall torch torch vision -y
-RUN pip install torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+RUN pip3 install torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
 WORKDIR /opt/nuclio
 
 # Run processor with configuration and platform configuration
