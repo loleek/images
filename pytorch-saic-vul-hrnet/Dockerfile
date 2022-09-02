@@ -26,8 +26,8 @@ COPY sources.list /etc/apt/sources.list
 RUN apt-get update && apt-get install software-properties-common -y
 RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential git curl libglib2.0-0 software-properties-common python3 python3.6-dev python3-pip python3-tk
-RUN pip3 install nuclio-sdk msgpack -i http://mirrors.aliyun.com/pypi/simple/ --no-index --find-links /opt/nuclio/whl
 RUN pip3 install --upgrade pip
+RUN pip3 install nuclio-sdk msgpack -i http://mirrors.aliyun.com/pypi/simple/ --no-index --find-links /opt/nuclio/whl
 WORKDIR /opt/nuclio
 RUN git clone https://github.com/saic-vul/ritm_interactive_segmentation.git hrnet
 WORKDIR /opt/nuclio/hrnet
