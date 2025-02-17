@@ -1,1 +1,1 @@
-FROM lmsysorg/sglang:v0.3.5-cu121-srt
+FROM lmsysorg/sglang:v0.4.3-cu125
