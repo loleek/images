@@ -1,1 +1,1 @@
-FROM flink-kubernetes-operator:1.10.0
+FROM apache/flink-kubernetes-operator:1.10.0
