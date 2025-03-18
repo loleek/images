@@ -1,0 +1,1 @@
+FROM mellanox/rping-test
