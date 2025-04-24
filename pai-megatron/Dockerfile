@@ -1,4 +1,4 @@
-FROM dsw-registry.cn-wulanchabu.cr.^Ciyuncs.com/pai/pai-megatron-patch:25.02
+FROM dsw-registry.cn-wulanchabu.cr.aliyuncs.com/pai/pai-megatron-patch:25.02
 
 RUN pip install \
     filetype==1.2.0 \
