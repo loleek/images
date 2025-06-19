@@ -160,7 +160,7 @@ RUN echo "下载更多手写风格字体..." && \
 RUN echo "创建字体回退机制和别名..." && \
     # 创建字体别名配置文件
     mkdir -p /etc/fonts/conf.d && \
-    cat > /etc/fonts/conf.d/99-font-aliases.conf << 'FONTEOF'
+    tee /etc/fonts/conf.d/99-font-aliases.conf > /dev/null << 'FONTEOF'
 <?xml version="1.0"?>
 <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
 <fontconfig>
