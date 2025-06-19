@@ -10,6 +10,8 @@ RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && 
     sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
 
 # ==================== 第一阶段：安装基础 LaTeX 环境和工具 ====================
+RUN ls -al /etc/apt/apt.conf.d/
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
 RUN apt-get update && apt-get install -y \
     # 基础 LaTeX 包
     texlive-latex-base \
@@ -39,8 +41,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     unzip \
     git \
-    fontconfig \
-    && rm -rf /var/lib/apt/lists/*
+    fontconfig
 
 # 配置 ImageMagick 安全策略，允许处理 PDF
 RUN sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/g' /etc/ImageMagick-6/policy.xml
@@ -56,8 +57,7 @@ RUN apt-get update && apt-get install -y \
     fonts-arphic-ukai \
     fonts-arphic-uming \
     fonts-arphic-bkai00mp \
-    fonts-arphic-gkai00mp \
-    && rm -rf /var/lib/apt/lists/*
+    fonts-arphic-gkai00mp
 
 # ==================== 第三阶段：创建字体目录结构 ====================
 RUN mkdir -p /usr/share/fonts/truetype/custom
@@ -159,74 +159,8 @@ RUN echo "下载更多手写风格字体..." && \
 # ==================== 第九阶段：创建字体回退链接和别名 ====================
 RUN echo "创建字体回退机制和别名..." && \
     # 创建字体别名配置文件
-    mkdir -p /etc/fonts/conf.d && \
-    tee /etc/fonts/conf.d/99-font-aliases.conf > /dev/null << 'FONTEOF'
-<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <!-- Google Fonts 别名 -->
-  <alias>
-    <family>Patrick Hand</family>
-    <prefer><family>PatrickHand-Regular</family></prefer>
-  </alias>
-  <alias>
-    <family>Homemade Apple</family>
-    <prefer><family>HomemadeApple-Regular</family></prefer>
-  </alias>
-  <alias>
-    <family>Dancing Script</family>
-    <prefer><family>DancingScript-Regular</family></prefer>
-  </alias>
-  <alias>
-    <family>Shadows Into Light</family>
-    <prefer><family>ShadowsIntoLight-Regular</family></prefer>
-  </alias>
-  <alias>
-    <family>Amatic SC</family>
-    <prefer><family>AmaticSC-Regular</family></prefer>
-  </alias>
-  
-  <!-- 字体回退机制 -->
-  <alias>
-    <family>Patrick Hand</family>
-    <prefer>
-      <family>PatrickHand-Regular</family>
-      <family>Handlee-Regular</family>
-      <family>IndieFlower-Regular</family>
-      <family>DejaVu Sans</family>
-    </prefer>
-  </alias>
-  
-  <alias>
-    <family>Shadows Into Light</family>
-    <prefer>
-      <family>ShadowsIntoLight-Regular</family>
-      <family>PatrickHand-Regular</family>
-      <family>Handlee-Regular</family>
-      <family>DejaVu Sans</family>
-    </prefer>
-  </alias>
-  
-  <alias>
-    <family>Amatic SC</family>
-    <prefer>
-      <family>AmaticSC-Regular</family>
-      <family>PatrickHand-Regular</family>
-      <family>DejaVu Sans</family>
-    </prefer>
-  </alias>
-  
-  <!-- 站酷字体回退 -->
-  <alias>
-    <family>ZcoolKuaiLe</family>
-    <prefer>
-      <family>ZcoolKuaiLe-Regular</family>
-      <family>LXGWWenKai-Regular</family>
-      <family>Noto Sans CJK SC</family>
-    </prefer>
-  </alias>
-</fontconfig>
-FONTEOF
+    mkdir -p /etc/fonts/conf.d
+COPY 99-font-aliases.conf /etc/fonts/conf.d/99-font-aliases.conf
 
 # 创建字体回退链接
 RUN echo "创建字体回退链接..." && \
@@ -264,152 +198,11 @@ COPY batch_convert_parallel.sh /usr/local/bin/batch_convert_parallel.sh
 RUN chmod +x /usr/local/bin/convert.sh /usr/local/bin/batch_convert.sh /usr/local/bin/batch_convert_parallel.sh
 
 # ==================== 第十二阶段：创建字体管理脚本 ====================
-RUN cat > /usr/local/bin/list-all-fonts.sh << 'EOF'
-#!/bin/bash
-echo "🎨 LaTeX 完整版字体库 - 安装情况报告"
-echo "=============================================="
-echo ""
-
-echo "📊 字体统计："
-echo "  总字体数量: $(fc-list | wc -l)"
-echo "  中文字体数量: $(fc-list :lang=zh | wc -l)"
-echo "  英文字体数量: $(fc-list :lang=en | wc -l)"
-echo ""
-
-echo "🔤 Google Fonts 手写体系列："
-cd /usr/share/fonts/truetype/google-fonts 2>/dev/null || echo "  目录不存在"
-ls -1 *.ttf 2>/dev/null | while read font; do
-    echo "  ✅ $font"
-done || echo "  ❌ 未找到 Google Fonts"
-echo ""
-
-echo "🎨 站酷字体系列："
-echo "  站酷快乐体: $(fc-list | grep -i 'kuaile\|快乐' | wc -l) 个"
-echo "  站酷小微体: $(fc-list | grep -i 'xiaowei\|小微' | wc -l) 个"
-echo "  站酷青科黄油体: $(fc-list | grep -i 'qingke\|huangyou\|青科\|黄油' | wc -l) 个"
-echo ""
-
-echo "🏢 阿里巴巴普惠体系列："
-echo "  普惠体数量: $(fc-list | grep -i 'alibaba\|puhuiti\|普惠' | wc -l) 个"
-echo ""
-
-echo "✍️ 创意和手写字体："
-echo "  得意黑: $(fc-list | grep -i 'smiley\|得意' | wc -l) 个"
-echo "  霞鹜文楷: $(fc-list | grep -i 'lxgw\|wenkai\|文楷' | wc -l) 个"
-echo "  江西拙楷: $(fc-list | grep -i 'jiangxi\|zhuokai\|拙楷' | wc -l) 个"
-echo "  仓耳今楷: $(fc-list | grep -i 'tsanger\|今楷' | wc -l) 个"
-echo ""
-
-echo "🌏 传统中文字体："
-echo "  文泉驿字体: $(fc-list | grep -i 'wenquanyi\|文泉驿' | wc -l) 个"
-echo "  思源字体: $(fc-list | grep -i 'noto\|source.*han' | wc -l) 个"
-echo "  方正字体: $(fc-list | grep -i 'arphic\|方正' | wc -l) 个"
-echo ""
-
-echo "📁 字体目录详情："
-echo "  Google Fonts: $(ls /usr/share/fonts/truetype/google-fonts/*.ttf 2>/dev/null | wc -l) 个文件"
-echo "  站酷字体: $(ls /usr/share/fonts/truetype/zcool/*.ttf 2>/dev/null | wc -l) 个文件"
-echo "  阿里巴巴字体: $(find /usr/share/fonts/truetype/alibaba -name "*.ttf" 2>/dev/null | wc -l) 个文件"
-echo "  创意字体: $(ls /usr/share/fonts/truetype/creative/*.ttf 2>/dev/null | wc -l) 个文件"
-echo "  手写字体: $(ls /usr/share/fonts/truetype/handwriting/*.ttf 2>/dev/null | wc -l) 个文件"
-echo ""
-
-echo "🔧 LaTeX 使用示例："
-echo "  \\usepackage{xeCJK}"
-echo "  \\setCJKmainfont{Noto Sans CJK SC}           % 思源黑体"
-echo "  \\setCJKmainfont{LXGWWenKai-Regular}         % 霞鹜文楷"
-echo "  \\setCJKmainfont{ZcoolKuaiLe-Regular}        % 站酷快乐体"
-echo "  \\newfontfamily\\alibaba{Alibaba Sans}        % 阿里巴巴普惠体"
-echo "  \\newfontfamily\\handwrite{Patrick Hand}      % Google手写体"
-echo ""
-
-echo "💡 使用提示："
-echo "  - 中文字体建议使用 XeLaTeX 编译"
-echo "  - 英文手写体可与中文字体混合使用"
-echo "  - 运行 'fc-list :lang=zh' 查看所有中文字体"
-echo "  - 运行 'fc-list | grep -i handwrite' 查看手写体"
-echo ""
-echo "=============================================="
-EOF
-
+COPY list-all-fonts.sh /usr/local/bin/list-all-fonts.sh
 RUN chmod +x /usr/local/bin/list-all-fonts.sh
 
 # ==================== 第十三阶段：创建字体测试脚本 ====================
-RUN cat > /usr/local/bin/test-fonts.sh << 'EOF'
-#!/bin/bash
-echo "🧪 字体功能测试"
-echo "创建字体测试文档..."
-
-cat > /tmp/font-test.tex << 'TEXEOF'
-\documentclass{article}
-\usepackage[utf8]{inputenc}
-\usepackage{xeCJK}
-\usepackage{amsmath}
-\usepackage{geometry}
-\geometry{a4paper, margin=1in}
-
-% 设置中文字体
-\setCJKmainfont{Noto Sans CJK SC}
-\newfontfamily\wenkai{LXGWWenKai-Regular}
-\newfontfamily\zcool{ZcoolKuaiLe-Regular}
-\newfontfamily\handwrite{Patrick Hand}
-
-\title{字体测试文档}
-\author{LaTeX Complete Font Tester}
-\date{\today}
-
-\begin{document}
-
-\maketitle
-
-\section{默认中文字体测试}
-
-这是使用 Noto Sans CJK SC (思源黑体) 的中文文本。包含数学公式：$E = mc^2$
-
-\section{特殊字体测试}
-
-{\wenkai 这是使用霞鹜文楷的中文文本，具有手写楷体风格。}
-
-{\zcool 这是使用站酷快乐体的中文文本，具有现代设计感。}
-
-\section{英文手写体测试}
-
-{\handwrite This is English text using Patrick Hand font, which has a handwriting style.}
-
-\section{数学公式测试}
-
-二次方程求解公式：
-\begin{equation}
-x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
-\end{equation}
-
-矩阵示例：
-\begin{equation}
-\begin{pmatrix}
-1 & 2 & 3 \\
-4 & 5 & 6 \\
-7 & 8 & 9
-\end{pmatrix}
-\end{equation}
-
-\end{document}
-TEXEOF
-
-echo "编译测试文档..."
-cd /tmp
-xelatex -interaction=nonstopmode font-test.tex > /dev/null 2>&1
-
-if [ -f font-test.pdf ]; then
-    echo "✅ 字体测试成功！生成了 font-test.pdf"
-    echo "📄 PDF页数: $(pdfinfo font-test.pdf | grep Pages | awk '{print $2}')"
-else
-    echo "❌ 字体测试失败，请检查字体安装"
-fi
-
-rm -f font-test.* 2>/dev/null || true
-echo "🧪 字体测试完成"
-EOF
-
+COPY test-fonts.sh /usr/local/bin/test-fonts.sh
 RUN chmod +x /usr/local/bin/test-fonts.sh
 
 # ==================== 第十四阶段：清理和最终设置 ====================
@@ -417,43 +210,14 @@ RUN chmod +x /usr/local/bin/test-fonts.sh
 RUN rm -rf /tmp/fonts
 
 # 创建字体映射文档
-RUN cat > /usr/share/fonts/FONT_MAPPING.md << 'EOF'
-# 完整字体映射表
-
-## 中文字体
-- **Noto Sans CJK SC**: 思源黑体简体 (Google开源)
-- **Noto Serif CJK SC**: 思源宋体简体 (Google开源)
-- **WenQuanYi Zen Hei**: 文泉驿正黑 (开源黑体)
-- **WenQuanYi Micro Hei**: 文泉驿微米黑 (小字号)
-- **AR PL UKai CN**: 楷体风格 (传统楷体)
-- **LXGWWenKai-Regular**: 霞鹜文楷 (手写楷体)
-- **ZcoolKuaiLe-Regular**: 站酷快乐体 (现代设计)
-- **ZcoolXiaoWei-Regular**: 站酷小微体 (精致风格)
-- **Alibaba Sans**: 阿里巴巴普惠体 (企业级字体)
-- **SmileySans-Oblique**: 得意黑 (现代创意)
-
-## 英文手写体
-- **Patrick Hand**: 自然手写风格
-- **Dancing Script**: 优雅舞动风格
-- **Handlee**: 清晰手写体
-- **Caveat**: 随意涂鸦风格
-- **Amatic SC**: 手绘艺术风格
-- **Architects Daughter**: 建筑师风格
-- **Indie Flower**: 可爱花体风格
-- **Shadows Into Light**: 艺术阴影风格
-
-## 使用建议
-- 中文文档建议使用 XeLaTeX 编译
-- 数学公式可配合任意字体使用
-- 混合使用中英文字体效果更佳
-EOF
+COPY FONT_MAPPING.md /usr/share/fonts/FONT_MAPPING.md
 
 # 显示安装完成信息
-RUN echo "🎉 LaTeX 完整版构建完成！" && \
-    echo "📊 安装的字体总数: $(fc-list | wc -l)" && \
-    echo "🔤 运行 'list-all-fonts.sh' 查看详细字体信息" && \
-    echo "🧪 运行 'test-fonts.sh' 测试字体功能" && \
-    echo "📚 查看 /usr/share/fonts/FONT_MAPPING.md 了解字体映射"
+RUN echo "��� LaTeX 完整版构建完成！" && \
+    echo "��� 安装的字体总数: $(fc-list | wc -l)" && \
+    echo "��� 运行 'list-all-fonts.sh' 查看详细字体信息" && \
+    echo "��� 运行 'test-fonts.sh' 测试字体功能" && \
+    echo "��� 查看 /usr/share/fonts/FONT_MAPPING.md 了解字体映射"
 
 # 设置入口点为批量转换脚本
-ENTRYPOINT ["/usr/local/bin/batch_convert.sh"] 
+ENTRYPOINT ["/usr/local/bin/batch_convert.sh"]
